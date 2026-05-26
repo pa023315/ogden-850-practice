@@ -86,6 +86,19 @@ function levelForRank(rank) {
   return "advanced";
 }
 
+function primaryPos(text) {
+  const raw = String(text || "").toLowerCase();
+  if (/\bart\b|article/.test(raw)) return "art";
+  if (/\badv\b/.test(raw)) return "adv";
+  if (/\badj\b|a\./.test(raw)) return "adj";
+  if (/\bvt\b|\bvi\b|\bv\b|v\./.test(raw)) return "v";
+  if (/\bprep\b/.test(raw)) return "prep";
+  if (/\bpron\b/.test(raw)) return "pron";
+  if (/\bconj\b/.test(raw)) return "conj";
+  if (/\bn\b|n\./.test(raw)) return "n";
+  return "n";
+}
+
 const csv = fs.readFileSync(sourcePath, "utf8");
 const [header, ...records] = parseCsv(csv);
 const columns = Object.fromEntries(header.map((name, index) => [name, index]));
@@ -103,12 +116,13 @@ for (const row of records) {
   const frq = Number(row[columns.frq]) || 0;
   const oxford = Number(row[columns.oxford]) || 0;
   const collins = Number(row[columns.collins]) || 0;
+  const pos = primaryPos(row[columns.pos] || row[columns.translation] || row[columns.definition]);
 
   if (!zh || !en) continue;
   if (!bnc && !frq && !oxford && !collins) continue;
 
   seen.add(word);
-  entries.push({ word, zh, en, phonetic, bnc, frq, oxford, collins });
+  entries.push({ word, zh, en, phonetic, bnc, frq, oxford, collins, pos });
 }
 
 entries.sort((a, b) => {
@@ -127,7 +141,8 @@ const selected = entries.slice(0, 5000).map((entry, index) => {
     ex: `Meaning: ${entry.en}.`,
     exz: entry.zh,
     s: [],
-    r: rank
+    r: rank,
+    p: entry.pos
   };
 });
 

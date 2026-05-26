@@ -59,6 +59,8 @@ let session = [];
 let currentIndex = -1;
 let currentQuestion = null;
 let answered = false;
+let chainMode = null;
+let chainTimer = null;
 
 const els = {
   dueCount: document.querySelector("#dueCount"),
@@ -77,6 +79,9 @@ const els = {
   startBtn: document.querySelector("#startBtn"),
   againBtn: document.querySelector("#againBtn"),
   speakBtn: document.querySelector("#speakBtn"),
+  speakSentenceBtn: document.querySelector("#speakSentenceBtn"),
+  chainWordsBtn: document.querySelector("#chainWordsBtn"),
+  chainSentencesBtn: document.querySelector("#chainSentencesBtn"),
   resetBtn: document.querySelector("#resetBtn"),
   dailyTarget: document.querySelector("#dailyTarget"),
   categoryFilter: document.querySelector("#categoryFilter"),
@@ -173,7 +178,7 @@ function pickSession() {
 function getQuestionType() {
   const mode = els.modeFilter.value;
   if (mode !== "mixed") return mode;
-  return ["zh-choice", "en-choice", "blank"][Math.floor(Math.random() * 3)];
+  return ["zh-choice", "en-choice", "blank", "gept", "toeic"][Math.floor(Math.random() * 5)];
 }
 
 function makeOptions(word, type) {
@@ -187,13 +192,118 @@ function makeOptions(word, type) {
 }
 
 function makeBlankSentence(word) {
-  const escaped = word.w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = new RegExp(`\\b${escaped}\\b`, "i");
-  if (pattern.test(word.ex)) {
-    return word.ex.replace(pattern, "_____");
-  }
   return `_____  (${t(word.zh)})`;
 }
+
+function examSentence(word, examType) {
+  if (word.p === "art") return articleSentence(word, examType);
+  const templates = examType === "toeic" ? toeicTemplates : geptTemplates;
+  const group = templates[word.p] || templates.n;
+  const template = group[Math.floor(Math.random() * group.length)];
+  return template.replace("{word}", "_____");
+}
+
+function articleSentence(word, examType) {
+  if (word.w === "the") {
+    return examType === "toeic"
+      ? "Please review _____ report before the meeting."
+      : "I returned _____ book you gave me.";
+  }
+  if (word.w === "an") {
+    return examType === "toeic"
+      ? "The client requested _____ updated invoice."
+      : "She ate _____ apple after school.";
+  }
+  return examType === "toeic"
+    ? "We scheduled _____ short meeting with the client."
+    : "He bought _____ new notebook.";
+}
+
+const geptTemplates = {
+  n: [
+    "The student looked up the _____ in the dictionary.",
+    "There is a _____ near the window.",
+    "My brother talked about the _____ after class."
+  ],
+  v: [
+    "Please _____ your answer before you write it down.",
+    "The children will _____ after school.",
+    "I need to _____ this before tomorrow."
+  ],
+  adj: [
+    "It was a _____ day, so we stayed outside.",
+    "The story was _____ and easy to understand.",
+    "She gave me a _____ answer."
+  ],
+  adv: [
+    "The teacher spoke _____ so everyone could understand.",
+    "He walked _____ into the classroom.",
+    "Please read the sentence _____."
+  ],
+  prep: [
+    "The bag is _____ the desk.",
+    "We talked _____ the trip after dinner.",
+    "She walked _____ the room quietly."
+  ],
+  pron: [
+    "_____ is waiting at the door.",
+    "I gave the book to _____.",
+    "_____ should finish the homework first."
+  ],
+  conj: [
+    "I stayed home _____ it was raining.",
+    "She wanted tea _____ her brother wanted coffee.",
+    "Call me _____ you arrive."
+  ],
+  art: [
+    "He bought _____ new notebook.",
+    "I returned _____ book you gave me.",
+    "She ate _____ apple after school."
+  ]
+};
+
+const toeicTemplates = {
+  n: [
+    "The manager reviewed the _____ before the meeting.",
+    "Please send the _____ to the client by Friday.",
+    "The company announced a new _____ this morning."
+  ],
+  v: [
+    "Please _____ the report before the deadline.",
+    "The team will _____ the schedule after lunch.",
+    "All employees must _____ the safety rules."
+  ],
+  adj: [
+    "The client requested a _____ update on the project.",
+    "We need a _____ plan for next quarter.",
+    "The new policy is _____ for all departments."
+  ],
+  adv: [
+    "The staff responded _____ to the customer's request.",
+    "The package was delivered _____ yesterday.",
+    "Please check the invoice _____ before submitting it."
+  ],
+  prep: [
+    "The presentation will begin _____ 10 a.m.",
+    "The files are stored _____ the shared folder.",
+    "Please speak _____ the supervisor about the change."
+  ],
+  pron: [
+    "_____ should contact the front desk for assistance.",
+    "The manager asked _____ to join the call.",
+    "_____ will receive the updated schedule by email."
+  ],
+  conj: [
+    "The office will close early _____ the renovation starts today.",
+    "The shipment arrived on time _____ the weather was poor.",
+    "Please confirm the order _____ we send the invoice."
+  ],
+  art: [
+    "Please review _____ report before the meeting.",
+    "We scheduled _____ short meeting with the client.",
+    "The client requested _____ updated invoice."
+  ]
+};
 
 function makeQuestion(word) {
   const type = getQuestionType();
@@ -215,6 +325,17 @@ function makeQuestion(word) {
       prompt: t(word.zh),
       hint: word.w,
       options: makeOptions(word, type)
+    };
+  }
+  if (type === "gept" || type === "toeic") {
+    return {
+      type,
+      word,
+      label: type === "gept" ? "英檢題" : "多益題",
+      prompt: examSentence(word, type),
+      hint: type === "gept" ? `一般情境 · ${t(word.zh)}` : `商務情境 · ${t(word.zh)}`,
+      answer: word.w,
+      options: makeOptions(word, "blank")
     };
   }
   return {
@@ -240,6 +361,7 @@ function renderQuestion() {
   els.questionProgress.textContent = `${currentIndex + 1} / ${session.length}`;
   els.promptLabel.textContent = `${categoryNames[currentQuestion.word.c]} · ${currentQuestion.word.en}`;
   els.promptText.textContent = currentQuestion.prompt;
+  els.promptText.classList.toggle("is-sentence", ["gept", "toeic"].includes(currentQuestion.type));
   els.promptHint.textContent = currentQuestion.hint;
   els.feedback.hidden = true;
   els.feedback.className = "feedback";
@@ -332,6 +454,7 @@ function submitBlank(event) {
 
 function nextQuestion() {
   if (currentIndex + 1 >= session.length) {
+    stopChain();
     els.promptLabel.textContent = "今日完成";
     els.promptText.textContent = "這輪練習結束";
     els.promptHint.textContent = "明天會優先排出今天答錯與到期的單字。";
@@ -417,13 +540,58 @@ function escapeHtml(text) {
 }
 
 function speakCurrent() {
-  const text = currentQuestion?.word?.w || "English vocabulary";
+  speakText(currentQuestion?.word?.w || "English vocabulary");
+}
+
+function spokenPrompt(question) {
+  if (!question) return "English vocabulary";
+  if (question.type === "zh-choice" || question.type === "en-choice") {
+    return `${question.word.w}. ${question.word.en}. ${t(question.word.zh)}.`;
+  }
+  return `${question.prompt.replace("_____", question.word.w)} ${question.word.w}. ${t(question.word.zh)}.`;
+}
+
+function speakCurrentSentence() {
+  speakText(spokenPrompt(currentQuestion));
+}
+
+function speakText(text, onend) {
   if (!("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = "en-US";
   utterance.rate = 0.86;
+  utterance.onend = onend || null;
   window.speechSynthesis.speak(utterance);
+}
+
+function setChainMode(mode) {
+  chainMode = chainMode === mode ? null : mode;
+  els.chainWordsBtn.classList.toggle("is-active", chainMode === "words");
+  els.chainSentencesBtn.classList.toggle("is-active", chainMode === "sentences");
+  clearTimeout(chainTimer);
+  window.speechSynthesis?.cancel();
+  if (chainMode) playChainItem();
+}
+
+function stopChain() {
+  chainMode = null;
+  clearTimeout(chainTimer);
+  els.chainWordsBtn.classList.remove("is-active");
+  els.chainSentencesBtn.classList.remove("is-active");
+  window.speechSynthesis?.cancel();
+}
+
+function playChainItem() {
+  if (!chainMode || !currentQuestion) return;
+  const text = chainMode === "words" ? currentQuestion.word.w : spokenPrompt(currentQuestion);
+  speakText(text, () => {
+    chainTimer = setTimeout(() => {
+      if (!chainMode) return;
+      nextQuestion();
+      if (chainMode) chainTimer = setTimeout(playChainItem, 450);
+    }, 550);
+  });
 }
 
 function resetProgress() {
@@ -446,6 +614,9 @@ els.startBtn.addEventListener("click", startPractice);
 els.againBtn.addEventListener("click", nextQuestion);
 els.blankForm.addEventListener("submit", submitBlank);
 els.speakBtn.addEventListener("click", speakCurrent);
+els.speakSentenceBtn.addEventListener("click", speakCurrentSentence);
+els.chainWordsBtn.addEventListener("click", () => setChainMode("words"));
+els.chainSentencesBtn.addEventListener("click", () => setChainMode("sentences"));
 els.resetBtn.addEventListener("click", resetProgress);
 els.clearErrorsBtn.addEventListener("click", clearErrors);
 els.searchInput.addEventListener("input", renderWordList);

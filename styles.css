@@ -134,6 +134,12 @@ h1 {
   color: var(--accent);
 }
 
+.ghost-btn.is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
 .text-btn {
   min-height: 34px;
   padding: 6px 10px;
@@ -204,6 +210,12 @@ h1 {
   overflow-wrap: anywhere;
   font-size: clamp(2.1rem, 6vw, 5rem);
   line-height: 1.04;
+}
+
+#promptText.is-sentence {
+  max-width: 18em;
+  font-size: clamp(1.8rem, 4vw, 3.4rem);
+  line-height: 1.16;
 }
 
 #promptHint {
