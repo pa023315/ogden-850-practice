@@ -1,7 +1,12 @@
-const STORAGE_KEY = "ogden850.srs.v1";
+const STORAGE_KEY = "english5000.srs.v1";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const categoryNames = {
+  core: "Core 1-1000",
+  common: "Common 1001-2000",
+  useful: "Useful 2001-3000",
+  broad: "Broad 3001-4000",
+  advanced: "Advanced 4001-5000",
   op: "Operations",
   gt: "General Things",
   pt: "Picturable Things",
@@ -176,7 +181,7 @@ function makeOptions(word, type) {
   const options = [word, ...pool];
   return shuffle(options).map((item) => ({
     word: item,
-    label: type === "zh-choice" ? t(item.zh) : type === "blank" ? item.w : item.en,
+    label: type === "zh-choice" ? t(item.zh) : item.w,
     correct: item.w === word.w
   }));
 }
@@ -225,7 +230,6 @@ function makeQuestion(word) {
 
 function answerLabel(question) {
   if (question.type === "zh-choice") return t(question.word.zh);
-  if (question.type === "en-choice") return question.word.en;
   return question.word.w;
 }
 
@@ -413,7 +417,7 @@ function escapeHtml(text) {
 }
 
 function speakCurrent() {
-  const text = currentQuestion?.word?.w || "Ogden Basic English";
+  const text = currentQuestion?.word?.w || "English vocabulary";
   if (!("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);

@@ -1,6 +1,6 @@
-# Ogden 850 Practice
+# English 5000 Practice
 
-Ogden Basic English 850 詞練習網站，資料取自 https://ogden.munch.love/。
+英文 5000 詞練習網站，使用 ECDICT 前 5000 常用詞建立練習資料。
 
 ## 功能
 
@@ -11,6 +11,11 @@ Ogden Basic English 850 詞練習網站，資料取自 https://ogden.munch.love/
 - 錯誤紀錄
 - 瀏覽器本機儲存學習進度
 - 以簡化 SM-2 間隔重複邏輯排複習題
+
+## 詞庫來源
+
+- ECDICT: Free English to Chinese Dictionary Database, MIT License
+- Repo: https://github.com/skywind3000/ECDICT
 
 ## 使用方式
 
