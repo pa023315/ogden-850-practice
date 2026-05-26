@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ogden 850 練習台</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app">
+      <section class="workspace" aria-label="練習">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Ogden Basic English</p>
+            <h1>850 詞練習台</h1>
+          </div>
+          <div class="top-actions">
+            <button id="speakBtn" class="icon-btn" type="button" title="朗讀單字" aria-label="朗讀單字">▶</button>
+            <button id="resetBtn" class="ghost-btn" type="button">重置進度</button>
+          </div>
+        </header>
+
+        <section class="stats-grid" aria-label="今日狀態">
+          <article>
+            <span>今日待複習</span>
+            <strong id="dueCount">0</strong>
+          </article>
+          <article>
+            <span>今日完成</span>
+            <strong id="doneCount">0</strong>
+          </article>
+          <article>
+            <span>正確率</span>
+            <strong id="accuracy">0%</strong>
+          </article>
+          <article>
+            <span>錯誤詞</span>
+            <strong id="wrongCount">0</strong>
+          </article>
+        </section>
+
+        <section class="practice-panel" aria-live="polite">
+          <div class="question-meta">
+            <span id="questionKind">四選一</span>
+            <span id="questionProgress">0 / 0</span>
+          </div>
+
+          <div class="prompt">
+            <p id="promptLabel">準備開始</p>
+            <h2 id="promptText">按「開始今日練習」</h2>
+            <p id="promptHint"></p>
+          </div>
+
+          <div id="choiceGrid" class="choice-grid"></div>
+
+          <form id="blankForm" class="blank-form" hidden>
+            <input id="blankInput" type="text" autocomplete="off" spellcheck="false">
+            <button type="submit">送出</button>
+          </form>
+
+          <div id="feedback" class="feedback" hidden></div>
+
+          <div class="practice-actions">
+            <button id="startBtn" class="primary-btn" type="button">開始今日練習</button>
+            <button id="againBtn" class="ghost-btn" type="button" hidden>下一題</button>
+          </div>
+        </section>
+      </section>
+
+      <aside class="side">
+        <section class="control-panel" aria-label="練習設定">
+          <h2>設定</h2>
+          <label>
+            <span>每日題數</span>
+            <input id="dailyTarget" type="number" min="5" max="80" step="5" value="20">
+          </label>
+          <label>
+            <span>分類</span>
+            <select id="categoryFilter">
+              <option value="all">全部 850 詞</option>
+              <option value="op">Operations</option>
+              <option value="gt">General Things</option>
+              <option value="pt">Picturable Things</option>
+              <option value="qg">General Qualities</option>
+              <option value="qo">Opposite Qualities</option>
+            </select>
+          </label>
+          <label>
+            <span>題型</span>
+            <select id="modeFilter">
+              <option value="mixed">混合</option>
+              <option value="zh-choice">選中文翻譯</option>
+              <option value="en-choice">選英文翻譯</option>
+              <option value="blank">填空題</option>
+            </select>
+          </label>
+        </section>
+
+        <section class="control-panel" aria-label="錯誤紀錄">
+          <div class="panel-head">
+            <h2>錯誤紀錄</h2>
+            <button id="clearErrorsBtn" class="text-btn" type="button">清除</button>
+          </div>
+          <div id="errorList" class="error-list"></div>
+        </section>
+
+        <section class="control-panel" aria-label="單字查詢">
+          <h2>單字庫</h2>
+          <input id="searchInput" class="search-input" type="search" placeholder="搜尋單字或中文">
+          <div id="wordList" class="word-list"></div>
+        </section>
+      </aside>
+    </main>
+
+    <script src="ogden-words.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
