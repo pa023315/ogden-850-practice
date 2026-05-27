@@ -61,6 +61,7 @@ let currentQuestion = null;
 let answered = false;
 let chainMode = null;
 let chainTimer = null;
+let focusWord = null;
 
 const els = {
   dueCount: document.querySelector("#dueCount"),
@@ -89,17 +90,33 @@ const els = {
   errorList: document.querySelector("#errorList"),
   clearErrorsBtn: document.querySelector("#clearErrorsBtn"),
   searchInput: document.querySelector("#searchInput"),
-  wordList: document.querySelector("#wordList")
+  wordList: document.querySelector("#wordList"),
+  useCurrentWordBtn: document.querySelector("#useCurrentWordBtn"),
+  ruleQuestionInput: document.querySelector("#ruleQuestionInput"),
+  ruleInput: document.querySelector("#ruleInput"),
+  ruleSentenceInput: document.querySelector("#ruleSentenceInput"),
+  saveRuleBtn: document.querySelector("#saveRuleBtn"),
+  focusWord: document.querySelector("#focusWord"),
+  focusMeaning: document.querySelector("#focusMeaning"),
+  patternList: document.querySelector("#patternList"),
+  ownSentenceInputs: document.querySelectorAll(".own-sentence"),
+  saveWordSentencesBtn: document.querySelector("#saveWordSentencesBtn"),
+  dailyLineInputs: document.querySelectorAll(".daily-line"),
+  saveDailyLinesBtn: document.querySelector("#saveDailyLinesBtn"),
+  learningSummary: document.querySelector("#learningSummary")
 };
 
 function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (saved && saved.cards && saved.errors) return saved;
+    if (saved && saved.cards && saved.errors) {
+      saved.learning = saved.learning || {};
+      return saved;
+    }
   } catch (error) {
     console.warn("Cannot read saved progress", error);
   }
-  return { cards: {}, errors: [], today: todayKey(), daily: { done: 0, correct: 0, total: 0 } };
+  return { cards: {}, errors: [], learning: {}, today: todayKey(), daily: { done: 0, correct: 0, total: 0 } };
 }
 
 function saveState() {
@@ -122,6 +139,18 @@ function rollDailyState() {
     state.daily = { done: 0, correct: 0, total: 0 };
     saveState();
   }
+  getTodayLearning();
+}
+
+function getTodayLearning() {
+  const key = todayKey();
+  if (!state.learning[key]) {
+    state.learning[key] = { rules: [], wordSentences: [], dailyLines: ["", "", ""] };
+  }
+  if (!Array.isArray(state.learning[key].dailyLines)) {
+    state.learning[key].dailyLines = ["", "", ""];
+  }
+  return state.learning[key];
 }
 
 function getCard(word) {
@@ -357,6 +386,7 @@ function answerLabel(question) {
 function renderQuestion() {
   answered = false;
   currentQuestion = makeQuestion(session[currentIndex]);
+  setFocusWord(currentQuestion.word);
   els.questionKind.textContent = currentQuestion.label;
   els.questionProgress.textContent = `${currentIndex + 1} / ${session.length}`;
   els.promptLabel.textContent = `${categoryNames[currentQuestion.word.c]} · ${currentQuestion.word.en}`;
@@ -444,6 +474,9 @@ function showFeedback(isCorrect) {
   });
   els.blankForm.hidden = true;
   els.againBtn.hidden = false;
+  if (!isCorrect) {
+    fillRuleDraft(currentQuestion, word);
+  }
 }
 
 function submitBlank(event) {
@@ -527,6 +560,126 @@ function renderWordList() {
       </button>
     `;
   }).join("");
+}
+
+function setFocusWord(word) {
+  if (!word || focusWord?.w === word.w) return;
+  focusWord = word;
+  els.focusWord.textContent = word.w;
+  els.focusMeaning.textContent = `${t(word.zh)} · ${word.en}`;
+  renderPatterns(word);
+  els.ownSentenceInputs.forEach((input) => {
+    input.value = "";
+  });
+}
+
+function patternsFor(word) {
+  const w = word.w;
+  const byPos = {
+    n: [`the ${w}`, `my ${w}`, `a ${w} for work`, `I need a ${w}.`],
+    v: [`I ${w} every day.`, `I need to ${w}.`, `Can you ${w} it?`, `I will ${w} tomorrow.`],
+    adj: [`a ${w} day`, `feel ${w}`, `This is ${w}.`, `It looks ${w}.`],
+    adv: [`speak ${w}`, `work ${w}`, `Please do it ${w}.`, `He answered ${w}.`],
+    prep: [`${w} the station`, `go ${w} the room`, `It is ${w} the desk.`, `I talked ${w} it.`],
+    pron: [`${w} can help.`, `I saw ${w}.`, `This is for ${w}.`, `${w} should try again.`],
+    conj: [`I stayed home ${w} it rained.`, `Call me ${w} you arrive.`, `I like tea ${w} coffee.`, `She went out ${w} she was tired.`],
+    art: [`${w} new book`, `${w} old bag`, `I bought ${w} notebook.`, `Please review ${w} report.`]
+  };
+  return byPos[word.p] || byPos.n;
+}
+
+function renderPatterns(word) {
+  els.patternList.innerHTML = patternsFor(word).map((pattern) => `
+    <button type="button" data-pattern="${escapeHtml(pattern)}">${escapeHtml(pattern)}</button>
+  `).join("");
+}
+
+function fillRuleDraft(question, word) {
+  const sentence = question.type === "zh-choice" || question.type === "en-choice"
+    ? `${word.w} = ${t(word.zh)}`
+    : question.prompt.replace("_____", word.w);
+  els.ruleQuestionInput.value = sentence;
+  els.ruleInput.value = ruleHint(question, word);
+  els.ruleSentenceInput.value = sampleOwnSentence(word);
+}
+
+function ruleHint(question, word) {
+  if (word.p === "art") return "冠詞要看後面的名詞與是否特定：a/an 表示一個，the 表示特定那個。";
+  if (["gept", "toeic", "blank"].includes(question.type)) return "先判斷空格需要的詞性，再看整句語意，不只看中文翻譯。";
+  if (question.type === "en-choice") return "看到中文時，先想英文單字本身，再用一個自己的句子固定它。";
+  return "看到英文單字時，不只記中文，還要記它能放進哪個句型。";
+}
+
+function sampleOwnSentence(word) {
+  return patternsFor(word).find((pattern) => /[.!?]$/.test(pattern)) || `I use ${word.w} today.`;
+}
+
+function saveRule() {
+  const learning = getTodayLearning();
+  const rule = {
+    question: els.ruleQuestionInput.value.trim(),
+    rule: els.ruleInput.value.trim(),
+    sentence: els.ruleSentenceInput.value.trim(),
+    at: new Date().toISOString()
+  };
+  if (!rule.question && !rule.rule && !rule.sentence) return;
+  learning.rules.unshift(rule);
+  learning.rules = learning.rules.slice(0, 20);
+  saveState();
+  renderLearningSummary();
+}
+
+function saveWordSentences() {
+  if (!focusWord) return;
+  const sentences = [...els.ownSentenceInputs].map((input) => input.value.trim()).filter(Boolean);
+  if (!sentences.length) return;
+  const learning = getTodayLearning();
+  learning.wordSentences.unshift({
+    word: focusWord.w,
+    zh: focusWord.zh,
+    sentences,
+    at: new Date().toISOString()
+  });
+  learning.wordSentences = learning.wordSentences.slice(0, 30);
+  saveState();
+  renderLearningSummary();
+}
+
+function saveDailyLines() {
+  const learning = getTodayLearning();
+  learning.dailyLines = [...els.dailyLineInputs].map((input) => input.value.trim());
+  saveState();
+  renderLearningSummary();
+}
+
+function loadDailyLines() {
+  const learning = getTodayLearning();
+  els.dailyLineInputs.forEach((input, index) => {
+    input.value = learning.dailyLines[index] || "";
+  });
+}
+
+function renderLearningSummary() {
+  const learning = getTodayLearning();
+  const dailyDone = learning.dailyLines.filter(Boolean).length;
+  const latestRule = learning.rules[0];
+  const latestWord = learning.wordSentences[0];
+  els.learningSummary.innerHTML = `
+    <article>
+      <strong>${learning.rules.length}</strong>
+      <span>錯題規則</span>
+    </article>
+    <article>
+      <strong>${learning.wordSentences.length}</strong>
+      <span>單字造句</span>
+    </article>
+    <article>
+      <strong>${dailyDone}/3</strong>
+      <span>今日生活句</span>
+    </article>
+    ${latestRule ? `<div class="summary-note"><b>最新規則</b><span>${escapeHtml(latestRule.rule || latestRule.question)}</span></div>` : ""}
+    ${latestWord ? `<div class="summary-note"><b>${escapeHtml(latestWord.word)}</b><span>${escapeHtml(latestWord.sentences[0] || "")}</span></div>` : ""}
+  `;
 }
 
 function escapeHtml(text) {
@@ -633,7 +786,22 @@ els.wordList.addEventListener("click", (event) => {
   currentIndex = 0;
   renderQuestion();
 });
+els.useCurrentWordBtn.addEventListener("click", () => {
+  if (currentQuestion?.word) setFocusWord(currentQuestion.word);
+});
+els.patternList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-pattern]");
+  if (!button) return;
+  const emptyInput = [...els.ownSentenceInputs].find((input) => !input.value.trim()) || els.ownSentenceInputs[0];
+  emptyInput.value = button.dataset.pattern;
+  emptyInput.focus();
+});
+els.saveRuleBtn.addEventListener("click", saveRule);
+els.saveWordSentencesBtn.addEventListener("click", saveWordSentences);
+els.saveDailyLinesBtn.addEventListener("click", saveDailyLines);
 
 rollDailyState();
 renderStats();
+loadDailyLines();
+renderLearningSummary();
 startPractice();

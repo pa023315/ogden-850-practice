@@ -68,6 +68,77 @@
             <button id="againBtn" class="ghost-btn" type="button" hidden>下一題</button>
           </div>
         </section>
+
+        <section class="learning-panel" aria-label="輸出訓練">
+          <div class="learning-head">
+            <div>
+              <p class="eyebrow">10 / 10 / 10</p>
+              <h2>把單字變成會用的英文</h2>
+            </div>
+            <button id="useCurrentWordBtn" class="ghost-btn" type="button">使用目前單字</button>
+          </div>
+
+          <div class="training-grid">
+            <article class="training-card">
+              <span class="step-badge">錯題整理 10 分鐘</span>
+              <h3>錯題變規則</h3>
+              <label>
+                <span>今日錯題 / 句子</span>
+                <input id="ruleQuestionInput" type="text" placeholder="例如 Are you coming with us tomorrow?">
+              </label>
+              <label>
+                <span>為什麼錯 / 規則</span>
+                <textarea id="ruleInput" rows="3" placeholder="例如 Are you + V-ing = 問未來安排"></textarea>
+              </label>
+              <label>
+                <span>我自己的類似句</span>
+                <input id="ruleSentenceInput" type="text" placeholder="例如 Are you coming to the meeting tomorrow?">
+              </label>
+              <button id="saveRuleBtn" class="primary-btn" type="button">存成規則</button>
+            </article>
+
+            <article class="training-card">
+              <span class="step-badge">句子輸出 10 分鐘</span>
+              <h3>單字放進固定句型</h3>
+              <div class="focus-word">
+                <strong id="focusWord">word</strong>
+                <span id="focusMeaning">中文意思</span>
+              </div>
+              <div id="patternList" class="pattern-list"></div>
+              <label>
+                <span>我的句子 1</span>
+                <input class="own-sentence" type="text" placeholder="用今天的單字寫一句很簡單的英文">
+              </label>
+              <label>
+                <span>我的句子 2</span>
+                <input class="own-sentence" type="text" placeholder="換成你的生活情境">
+              </label>
+              <label>
+                <span>我的句子 3</span>
+                <input class="own-sentence" type="text" placeholder="再寫一句，不用難">
+              </label>
+              <button id="saveWordSentencesBtn" class="primary-btn" type="button">存我的句子</button>
+            </article>
+
+            <article class="training-card">
+              <span class="step-badge">每日輸出 10 分鐘</span>
+              <h3>今天我會多說 3 句</h3>
+              <label>
+                <span>生活句 1</span>
+                <input class="daily-line" type="text" placeholder="I woke up late today.">
+              </label>
+              <label>
+                <span>生活句 2</span>
+                <input class="daily-line" type="text" placeholder="I drank coffee.">
+              </label>
+              <label>
+                <span>生活句 3</span>
+                <input class="daily-line" type="text" placeholder="English is painful, but I don't want to give up.">
+              </label>
+              <button id="saveDailyLinesBtn" class="primary-btn" type="button">存今日 3 句</button>
+            </article>
+          </div>
+        </section>
       </section>
 
       <aside class="side">
@@ -99,6 +170,11 @@
               <option value="toeic">多益題</option>
             </select>
           </label>
+        </section>
+
+        <section class="control-panel" aria-label="今日輸出">
+          <h2>今日輸出</h2>
+          <div id="learningSummary" class="learning-summary"></div>
         </section>
 
         <section class="control-panel" aria-label="錯誤紀錄">
