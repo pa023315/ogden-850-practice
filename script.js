@@ -7,6 +7,7 @@ const categoryNames = {
   useful: "Useful 2001-3000",
   broad: "Broad 3001-4000",
   advanced: "Advanced 4001-5000",
+  wrong: "匯入錯題",
   op: "Operations",
   gt: "General Things",
   pt: "Picturable Things",
@@ -153,6 +154,59 @@ function getTodayLearning() {
   return state.learning[key];
 }
 
+function ensureWrongWordImport() {
+  if (!window.WRONG_WORD_IMPORT) return;
+  const wrongImport = window.WRONG_WORD_IMPORT;
+  const byWord = new Map(OGDEN_WORDS.map((word) => [word.w.toLowerCase(), word]));
+
+  wrongImport.extras.forEach((extra) => {
+    const existing = byWord.get(extra.w.toLowerCase());
+    if (existing) {
+      existing.seedWrong = true;
+    } else {
+      OGDEN_WORDS.push(extra);
+      byWord.set(extra.w.toLowerCase(), extra);
+    }
+  });
+
+  wrongImport.seed.forEach((item) => {
+    const word = byWord.get(item.word.toLowerCase());
+    if (word) word.seedWrong = true;
+  });
+
+  state.imports = state.imports || {};
+  if (state.imports[wrongImport.importId]) return;
+
+  const now = Date.now();
+  wrongImport.seed.forEach((item) => {
+    const word = byWord.get(item.word.toLowerCase());
+    if (!word) return;
+    const card = getCard(word);
+    card.wrong = Math.max(card.wrong, item.wrongCount);
+    card.lapses = Math.max(card.lapses, item.wrongCount);
+    card.ease = Math.min(card.ease || 2.5, item.wrongCount >= 3 ? 1.8 : 2.15);
+    card.interval = 0;
+    card.due = startOfToday() - item.wrongCount;
+    card.last = now;
+    state.errors.unshift({
+      word: word.w,
+      zh: word.zh,
+      en: word.en,
+      type: `匯入錯題 ${item.bucket}`,
+      response: "匯入錯字記錄",
+      answer: word.w,
+      at: new Date().toISOString()
+    });
+  });
+
+  state.errors = state.errors.slice(0, 300);
+  state.imports[wrongImport.importId] = {
+    importedAt: new Date().toISOString(),
+    count: wrongImport.seed.length
+  };
+  saveState();
+}
+
 function getCard(word) {
   if (!state.cards[word.w]) {
     state.cards[word.w] = {
@@ -179,6 +233,7 @@ function clean(text) {
 
 function filteredWords() {
   const cat = els.categoryFilter.value;
+  if (cat === "wrong") return OGDEN_WORDS.filter((word) => word.seedWrong);
   return cat === "all" ? OGDEN_WORDS : OGDEN_WORDS.filter((word) => word.c === cat);
 }
 
@@ -801,6 +856,7 @@ els.saveWordSentencesBtn.addEventListener("click", saveWordSentences);
 els.saveDailyLinesBtn.addEventListener("click", saveDailyLines);
 
 rollDailyState();
+ensureWrongWordImport();
 renderStats();
 loadDailyLines();
 renderLearningSummary();
