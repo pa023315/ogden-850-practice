@@ -175,19 +175,22 @@ function ensureWrongWordImport() {
   });
 
   state.imports = state.imports || {};
-  if (state.imports[wrongImport.importId]) return;
 
   const now = Date.now();
+  let repaired = 0;
   wrongImport.seed.forEach((item) => {
     const word = byWord.get(item.word.toLowerCase());
     if (!word) return;
     const card = getCard(word);
-    card.wrong = Math.max(card.wrong, item.wrongCount);
+    const needsSeedSchedule = card.reps === 0 && card.wrong < item.wrongCount;
+    if (!needsSeedSchedule) return;
+    repaired += 1;
+    card.wrong = item.wrongCount;
     card.lapses = Math.max(card.lapses, item.wrongCount);
     card.ease = Math.min(card.ease || 2.5, item.wrongCount >= 3 ? 1.8 : 2.15);
     card.interval = 0;
     card.due = startOfToday() - item.wrongCount;
-    card.last = now;
+    card.last = card.last || now;
     state.errors.unshift({
       word: word.w,
       zh: word.zh,
@@ -201,8 +204,10 @@ function ensureWrongWordImport() {
 
   state.errors = state.errors.slice(0, 300);
   state.imports[wrongImport.importId] = {
-    importedAt: new Date().toISOString(),
-    count: wrongImport.seed.length
+    importedAt: state.imports[wrongImport.importId]?.importedAt || new Date().toISOString(),
+    verifiedAt: new Date().toISOString(),
+    count: wrongImport.seed.length,
+    repaired
   };
   saveState();
 }
@@ -252,9 +257,15 @@ function pickSession() {
   const now = Date.now();
   const target = Math.max(5, Math.min(80, Number(els.dailyTarget.value) || 20));
   const due = words
-    .filter((word) => getCard(word).due <= now)
-    .sort((a, b) => getCard(a).due - getCard(b).due || getCard(b).wrong - getCard(a).wrong);
-  const newWords = shuffle(words.filter((word) => getCard(word).reps === 0 && !due.includes(word)));
+    .filter((word) => {
+      const card = getCard(word);
+      return (card.reps > 0 || card.wrong > 0) && card.due <= now;
+    })
+    .sort((a, b) => getCard(b).wrong - getCard(a).wrong || getCard(a).due - getCard(b).due);
+  const newWords = shuffle(words.filter((word) => {
+    const card = getCard(word);
+    return card.reps === 0 && card.wrong === 0 && !due.includes(word);
+  }));
   const extra = shuffle(words.filter((word) => !due.includes(word) && getCard(word).reps > 0));
   return [...due, ...newWords, ...extra].slice(0, target);
 }
@@ -571,7 +582,10 @@ function renderStats() {
   const words = filteredWords();
   const now = Date.now();
   const cards = words.map(getCard);
-  const due = words.filter((word) => getCard(word).due <= now).length;
+  const due = words.filter((word) => {
+    const card = getCard(word);
+    return (card.reps > 0 || card.wrong > 0) && card.due <= now;
+  }).length;
   const wrong = cards.filter((card) => card.wrong > 0).length;
   const acc = state.daily.total ? Math.round((state.daily.correct / state.daily.total) * 100) : 0;
   els.dueCount.textContent = due;
