@@ -29,7 +29,7 @@ function makeElement(initial = {}) {
   };
 }
 
-function runAppWithState(initialState) {
+function runAppWithState(initialState, mode = "zh-choice") {
   const storage = new Map([[STORAGE_KEY, JSON.stringify(initialState)]]);
   const elements = new Map();
   const dailyLines = [makeElement(), makeElement(), makeElement()];
@@ -42,7 +42,7 @@ function runAppWithState(initialState) {
 
   element("#dailyTarget").value = "20";
   element("#categoryFilter").value = "all";
-  element("#modeFilter").value = "zh-choice";
+  element("#modeFilter").value = mode;
 
   const sandbox = {
     console,
@@ -90,6 +90,7 @@ function runAppWithState(initialState) {
     state: JSON.parse(storage.get(STORAGE_KEY)),
     prompt: element("#promptText").textContent,
     label: element("#promptLabel").textContent,
+    hint: element("#promptHint").textContent,
     dueCount: element("#dueCount").textContent,
     wrongCount: element("#wrongCount").textContent
   };
@@ -126,6 +127,16 @@ if (String(result.dueCount) !== "816") {
 
 if (!result.state.cards[result.prompt] || result.state.cards[result.prompt].wrong === 0) {
   throw new Error(`Expected the first daily question to be an imported wrong word, got ${result.prompt} (${result.label})`);
+}
+
+const cleanPromptResult = runAppWithState(staleImportedState, "en-choice");
+
+if (cleanPromptResult.label !== "") {
+  throw new Error(`Expected prompt label to be empty, got ${cleanPromptResult.label}`);
+}
+
+if (cleanPromptResult.hint !== "") {
+  throw new Error(`Expected English-answer hint to be empty, got ${cleanPromptResult.hint}`);
 }
 
 console.log("wrong import daily verification passed");

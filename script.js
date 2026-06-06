@@ -418,7 +418,7 @@ function makeQuestion(word) {
       word,
       label: "選英文翻譯",
       prompt: t(word.zh),
-      hint: word.w,
+      hint: "",
       options: makeOptions(word, type)
     };
   }
@@ -455,7 +455,7 @@ function renderQuestion() {
   setFocusWord(currentQuestion.word);
   els.questionKind.textContent = currentQuestion.label;
   els.questionProgress.textContent = `${currentIndex + 1} / ${session.length}`;
-  els.promptLabel.textContent = `${categoryNames[currentQuestion.word.c]} · ${currentQuestion.word.en}`;
+  els.promptLabel.textContent = "";
   els.promptText.textContent = currentQuestion.prompt;
   els.promptText.classList.toggle("is-sentence", ["gept", "toeic"].includes(currentQuestion.type));
   els.promptHint.textContent = currentQuestion.hint;
@@ -554,7 +554,7 @@ function submitBlank(event) {
 function nextQuestion() {
   if (currentIndex + 1 >= session.length) {
     stopChain();
-    els.promptLabel.textContent = "今日完成";
+    els.promptLabel.textContent = "";
     els.promptText.textContent = "這輪練習結束";
     els.promptHint.textContent = "明天會優先排出今天答錯與到期的單字。";
     els.choiceGrid.innerHTML = "";

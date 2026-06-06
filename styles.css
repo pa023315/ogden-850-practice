@@ -208,6 +208,11 @@ h1 {
   text-transform: uppercase;
 }
 
+#promptLabel:empty,
+#promptHint:empty {
+  display: none;
+}
+
 #promptText {
   overflow-wrap: anywhere;
   font-size: clamp(2.1rem, 6vw, 5rem);
